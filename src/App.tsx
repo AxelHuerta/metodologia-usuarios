@@ -26,6 +26,7 @@ function App() {
   const [isButtonA, setIsButtonA] = useState(false);
   const [isButtonB, setIsButtonB] = useState(false);
   const [answers, setAnswers] = useState<string[]>([]);
+  const [answerBankStatus, setAnswerBankStatus] = useState(true);
 
   const [timeLeft, setTimeLeft] = useState(0); // Tiempo inicial en segundos
   const [isRoundInProgress, setIsRoundInProgress] = useState(false);
@@ -38,6 +39,7 @@ function App() {
         getUsers();
         // TODO: Es necesario obtener la ronda actual?
         getRound();
+        getAnswerBankStatus();
         getRoundStatus();
         getAnswers();
       }
@@ -53,6 +55,7 @@ function App() {
       getUsers();
       getRound();
       getRoundStatus();
+      getAnswerBankStatus();
       getAnswers();
     },
     shouldReconnect: (closeEvent) => true,
@@ -108,7 +111,7 @@ function App() {
 
     if (response && !isRoundInProgress) {
       setIsRoundInProgress(true);
-      setTimeLeft(10);
+      setTimeLeft(60);
     } else if (!response) {
       setIsRoundInProgress(false);
       setTimeLeft(0);
@@ -119,6 +122,16 @@ function App() {
   const getAnswers = async () => {
     const response = await axios.get("http://localhost:3000/api/answers");
     setAnswers(response.data);
+  };
+
+  // Obtener el estado del banco de respuestas
+  const getAnswerBankStatus = async () => {
+    const response = await axios.get(
+      "http://localhost:3000/api/answers/status"
+    );
+
+    console.log("bank status", response.data);
+    setAnswerBankStatus(response.data);
   };
 
   // Seleccionar la opción A
@@ -135,6 +148,18 @@ function App() {
     setIsButtonA(false);
     setIsButtonB(true);
     sendAnswer(B);
+  };
+
+  const handleAnswers = (u: User, index: number) => {
+    if (u.answers[round] === undefined) {
+      return "Esperando respuesta";
+    }
+    if (u.answers.length > 0 && answerBankStatus) {
+      return answers[index];
+    }
+    if (u.answers.length > 0 && !answerBankStatus) {
+      return u.answers[round];
+    }
   };
 
   useEffect(() => {
@@ -177,11 +202,7 @@ function App() {
                 <Card key={u.id} className="w-full mt-2">
                   <CardContent className="flex justify-around py-2 font-bold">
                     <span className="mr-4">{u.name}</span>
-                    <span>
-                      {u.answers.length > 0
-                        ? answers[index]
-                        : "Esperando respuesta"}
-                    </span>
+                    <span>{handleAnswers(u, index)}</span>
                   </CardContent>
                 </Card>
               );
@@ -196,7 +217,7 @@ function App() {
             <CardContent className="flex">
               <Button
                 className={`w-full mx-1 ${
-                  isButtonA ? "text-black bg-green-400" : ""
+                  isButtonA ? "text-black bg-green-400 hover:bg-green-500" : ""
                 }`}
                 variant="outline"
                 onClick={setOptionA}
@@ -205,7 +226,7 @@ function App() {
               </Button>
               <Button
                 className={`w-full mx-1 ${
-                  isButtonB ? "bg-green-400 text-black" : ""
+                  isButtonB ? "bg-green-400 text-black hover:bg-green-500" : ""
                 }`}
                 variant="outline"
                 onClick={setOptionB}
