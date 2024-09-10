@@ -23,6 +23,8 @@ function App() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [round, setRound] = useState<number>(0);
+  const [isButtonA, setIsButtonA] = useState(false);
+  const [isButtonB, setIsButtonB] = useState(false);
 
   const [timeLeft, setTimeLeft] = useState(0); // Tiempo inicial en segundos
   const [isRoundInProgress, setIsRoundInProgress] = useState(false);
@@ -97,42 +99,45 @@ function App() {
       }
     );
 
-    setIsRoundInProgress(response);
-    if (response) {
+    if (response && !isRoundInProgress) {
+      setIsRoundInProgress(true);
       setTimeLeft(10);
+    } else if (!response) {
+      setIsRoundInProgress(false);
+      setTimeLeft(0);
     }
-  };
-
-  // Comenzar la ronda
-  const handleStartRound = async () => {
-    const status = await axios.post("http://localhost:3000/api/round/status");
-    setIsRoundInProgress(status.data);
   };
 
   // Seleccionar la opción A
   const setOptionA = () => {
     console.log("Option A");
+    setIsButtonB(false);
+    setIsButtonA(true);
     sendAnswer(A);
   };
 
   // Seleccionar la opción A
   const setOptionB = () => {
     console.log("Option B");
+    setIsButtonA(false);
+    setIsButtonB(true);
     sendAnswer(B);
   };
 
-  // useEffect(() => {
-  //   if (timeLeft > 0) {
-  //     const timer = setTimeout(() => {
-  //       setTimeLeft(timeLeft - 1);
-  //     }, 1000);
+  useEffect(() => {
+    if (timeLeft > 0) {
+      const timer = setTimeout(() => {
+        setTimeLeft(timeLeft - 1);
+      }, 1000);
 
-  //     // Limpiar el temporizador cuando el componente se desmonte
-  //     return () => clearTimeout(timer);
-  //   } else {
-  //     setIsRoundInProgress(false);
-  //   }
-  // }, [timeLeft]);
+      // Limpiar el temporizador cuando el componente se desmonte
+      return () => clearTimeout(timer);
+    } else {
+      setIsRoundInProgress(false);
+      setIsButtonA(false);
+      setIsButtonB(false);
+    }
+  }, [timeLeft]);
 
   if (!isLoaded) {
     return <FormName setName={setName} handleSubmit={handleSubmit} />;
@@ -185,10 +190,22 @@ function App() {
           <CardHeader>
             <CardTitle className="text-xl">¿Es dulce o picante?</CardTitle>
             <CardContent className="flex">
-              <Button className="w-full mx-1" onClick={setOptionA}>
+              <Button
+                className={`w-full mx-1 ${
+                  isButtonA ? "text-black bg-green-400" : ""
+                }`}
+                variant="outline"
+                onClick={setOptionA}
+              >
                 Dulce
               </Button>
-              <Button className="w-full mx-1" onClick={setOptionB}>
+              <Button
+                className={`w-full mx-1 ${
+                  isButtonB ? "bg-green-400 text-black" : ""
+                }`}
+                variant="outline"
+                onClick={setOptionB}
+              >
                 Picante
               </Button>
             </CardContent>
