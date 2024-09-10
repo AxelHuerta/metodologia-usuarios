@@ -17,7 +17,7 @@ function FormName(props: Readonly<Props>) {
   };
 
   return (
-    <main className="bg-neutral-100 min-h-screen flex flex-col justify-center">
+    <main className="bg-neutral-100 min-h-screen flex flex-col justify-center px-4">
       <div className="w-full max-w-[500px] mx-auto">
         <Label className="text-xl">Nombre</Label>
         <Input

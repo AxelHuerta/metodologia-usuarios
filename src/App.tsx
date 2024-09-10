@@ -4,7 +4,7 @@ import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FormName from "./components/sections/FormName";
 import { Button } from "./components/ui/button";
-import { Loader2 } from "lucide-react";
+import Loading from "./components/sections/Loading";
 
 // Definir el tipo de usuario
 type User = {
@@ -25,6 +25,7 @@ function App() {
   const [round, setRound] = useState<number>(0);
   const [isButtonA, setIsButtonA] = useState(false);
   const [isButtonB, setIsButtonB] = useState(false);
+  const [answers, setAnswers] = useState<string[]>([]);
 
   const [timeLeft, setTimeLeft] = useState(0); // Tiempo inicial en segundos
   const [isRoundInProgress, setIsRoundInProgress] = useState(false);
@@ -38,15 +39,21 @@ function App() {
         // TODO: Es necesario obtener la ronda actual?
         getRound();
         getRoundStatus();
+        getAnswers();
       }
     },
     onMessage: (event) => {
       const { type } = JSON.parse(event.data);
-      if (type !== "on-user-count-changed" && type !== "on-round-count-changed")
+      if (
+        type !== "on-user-count-changed" &&
+        type !== "on-round-count-changed" &&
+        type !== "on-answers-bank-count-changed"
+      )
         return;
       getUsers();
       getRound();
       getRoundStatus();
+      getAnswers();
     },
     shouldReconnect: (closeEvent) => true,
   });
@@ -108,6 +115,12 @@ function App() {
     }
   };
 
+  // Obtener las respuestas
+  const getAnswers = async () => {
+    const response = await axios.get("http://localhost:3000/api/answers");
+    setAnswers(response.data);
+  };
+
   // Seleccionar la opción A
   const setOptionA = () => {
     console.log("Option A");
@@ -144,21 +157,12 @@ function App() {
   }
 
   if (isLoaded && !isRoundInProgress) {
-    return (
-      <main className="bg-neutral-100 min-h-screen flex flex-col justify-center items-center">
-        <h1 className="text-3xl font-bold">
-          <p className="flex items-center">
-            Esperando a que comience la ronda
-            <Loader2 size={32} className="animate-spin ml-2" />
-          </p>
-        </h1>
-      </main>
-    );
+    return <Loading />;
   }
 
   return (
-    <main className="bg-neutral-100 min-h-screen flex flex-col justify-center items-center">
-      <div className="grid grid-cols-2 gap-4 auto-rows-fr">
+    <main className="bg-neutral-100 min-h-screen flex flex-col justify-center items-center px-4">
+      <div className="grid grid-cols-2 gap-4">
         {/* Respuestas de otros usuarios */}
         <Card className="max-w-[500px]">
           <CardHeader>
@@ -167,7 +171,7 @@ function App() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {users.map((u) => {
+            {users.map((u, index) => {
               if (u.id === myUser?.id) return null;
               return (
                 <Card key={u.id} className="w-full mt-2">
@@ -175,7 +179,7 @@ function App() {
                     <span className="mr-4">{u.name}</span>
                     <span>
                       {u.answers.length > 0
-                        ? u.answers[round]
+                        ? answers[index]
                         : "Esperando respuesta"}
                     </span>
                   </CardContent>
