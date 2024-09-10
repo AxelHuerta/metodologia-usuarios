@@ -17,6 +17,8 @@ const WS_URL = "ws://localhost:3000/ws";
 const A = "Dulce";
 const B = "Picante";
 
+const btnActiveStyles = "text-black border-2 border-black";
+
 function App() {
   const [name, setName] = useState("");
   const [myUser, setMyUser] = useState<User>();
@@ -27,6 +29,7 @@ function App() {
   const [isButtonB, setIsButtonB] = useState(false);
   const [answers, setAnswers] = useState<string[]>([]);
   const [answerBankStatus, setAnswerBankStatus] = useState(true);
+  const [limitOfUsers, setLimitOfUsers] = useState(false);
 
   const [timeLeft, setTimeLeft] = useState(0); // Tiempo inicial en segundos
   const [isRoundInProgress, setIsRoundInProgress] = useState(false);
@@ -68,6 +71,11 @@ function App() {
     const userData = await axios.post("http://localhost:3000/api/users", {
       name,
     });
+
+    if (userData.data.error) {
+      setLimitOfUsers(true);
+      return;
+    }
 
     setMyUser(userData.data);
     setIsLoaded(true);
@@ -130,7 +138,6 @@ function App() {
       "http://localhost:3000/api/answers/status"
     );
 
-    console.log("bank status", response.data);
     setAnswerBankStatus(response.data);
   };
 
@@ -150,9 +157,10 @@ function App() {
     sendAnswer(B);
   };
 
+  // Manejar las respuestas de los usuarios
   const handleAnswers = (u: User, index: number) => {
     if (u.answers[round] === undefined) {
-      return "Esperando respuesta";
+      return "...";
     }
     if (u.answers.length > 0 && answerBankStatus) {
       return answers[index];
@@ -160,6 +168,12 @@ function App() {
     if (u.answers.length > 0 && !answerBankStatus) {
       return u.answers[round];
     }
+  };
+
+  const checkUsersLimit = () => {
+    if (limitOfUsers) return true;
+
+    return false;
   };
 
   useEffect(() => {
@@ -177,30 +191,45 @@ function App() {
     }
   }, [timeLeft]);
 
-  if (!isLoaded) {
-    return <FormName setName={setName} handleSubmit={handleSubmit} />;
+  if (limitOfUsers) {
+    return (
+      <main className="bg-neutral-100 min-h-screen flex flex-col justify-center items-center">
+        <h2 className="text-2xl font-bold">
+          ¡Ya hay suficientes participantes!
+        </h2>
+      </main>
+    );
   }
 
-  if (isLoaded && !isRoundInProgress) {
+  if (!isLoaded) {
+    return (
+      <FormName
+        setName={setName}
+        handleSubmit={handleSubmit}
+        checkUsersLimit={checkUsersLimit}
+      />
+    );
+  }
+
+  if (isLoaded && !isRoundInProgress && !checkUsersLimit()) {
     return <Loading />;
   }
 
   return (
-    <main className="bg-neutral-100 min-h-screen flex flex-col justify-center items-center px-4">
-      <div className="grid grid-cols-2 gap-4">
+    <main className="bg-neutral-100 min-h-screen flex flex-col justify-center items-center">
+      <div className="grid grid-cols-1 gap-2 w-full px-2 max-w-[1400px] md:grid-cols-2">
         {/* Respuestas de otros usuarios */}
-        <Card className="max-w-[500px]">
-          <CardHeader>
-            <CardTitle className="text-xl">
+        <Card>
+          {/* TODO: Tamaño de 4 participantes */}
+          <CardContent className="min-h-[450px]">
+            <CardTitle className="text-xl my-2 text-center md:my-4">
               Respuestas de otros usuarios
             </CardTitle>
-          </CardHeader>
-          <CardContent>
             {users.map((u, index) => {
               if (u.id === myUser?.id) return null;
               return (
-                <Card key={u.id} className="w-full mt-2">
-                  <CardContent className="flex justify-around py-2 font-bold">
+                <Card key={u.id} className="w-full my-1">
+                  <CardContent className="flex justify-between py-2 font-bold">
                     <span className="mr-4">{u.name}</span>
                     <span>{handleAnswers(u, index)}</span>
                   </CardContent>
@@ -211,23 +240,21 @@ function App() {
         </Card>
 
         {/* Respuestas del usuario */}
-        <Card className="max-w-[400px] mt-2">
+        <Card className="flex justify-center items-center">
           <CardHeader>
-            <CardTitle className="text-xl">¿Es dulce o picante?</CardTitle>
+            <CardTitle className="text-xl text-center">
+              ¿Es dulce o picante?
+            </CardTitle>
             <CardContent className="flex">
               <Button
-                className={`w-full mx-1 ${
-                  isButtonA ? "text-black bg-green-400 hover:bg-green-500" : ""
-                }`}
+                className={`w-full mx-1 ${isButtonA ? btnActiveStyles : ""}`}
                 variant="outline"
                 onClick={setOptionA}
               >
                 Dulce
               </Button>
               <Button
-                className={`w-full mx-1 ${
-                  isButtonB ? "bg-green-400 text-black hover:bg-green-500" : ""
-                }`}
+                className={`w-full mx-1 ${isButtonB ? btnActiveStyles : ""}`}
                 variant="outline"
                 onClick={setOptionB}
               >
@@ -236,14 +263,15 @@ function App() {
             </CardContent>
           </CardHeader>
         </Card>
+        <Card className="flex justify-center items-center pt-3 md:col-span-2">
+          <CardContent className="flex justify-between items-center w-full">
+            <span>Ronda: {round + 1}</span>
+            {/* <span>{myUser?.name}</span> */}
+            <span>John Doe</span>
+            <span>Tiempo: {timeLeft}</span>
+          </CardContent>
+        </Card>
       </div>
-      <footer className="mt-4 bottom-0 absolute bg-black text-white p-4 w-full">
-        <div className="flex justify-around">
-          <span>Ronda: {round + 1}</span>
-          <span>{myUser?.name}</span>
-          <span>Tiempo: {timeLeft}</span>
-        </div>
-      </footer>
     </main>
   );
 }

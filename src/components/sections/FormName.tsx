@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 type Props = {
   setName: (name: string) => void;
   handleSubmit: () => void;
+  checkUsersLimit: () => boolean;
 };
 
 function FormName(props: Readonly<Props>) {
