@@ -29,7 +29,8 @@ function App() {
   const [isButtonB, setIsButtonB] = useState(false);
   const [answers, setAnswers] = useState<string[]>([]);
   const [answerBankStatus, setAnswerBankStatus] = useState(true);
-  const [limitOfUsers, setLimitOfUsers] = useState(false);
+  const [limitOfUsers, setLimitOfUsers] = useState<number>(8);
+  const [isLimitOfUsers, setIsLimitOfUsers] = useState(false);
 
   const [timeLeft, setTimeLeft] = useState(0); // Tiempo inicial en segundos
   const [isRoundInProgress, setIsRoundInProgress] = useState(false);
@@ -42,6 +43,7 @@ function App() {
         getUsers();
         // TODO: Es necesario obtener la ronda actual?
         getRound();
+        getLimitOfUsers();
         getAnswerBankStatus();
         getRoundStatus();
         getAnswers();
@@ -60,6 +62,7 @@ function App() {
       getRoundStatus();
       getAnswerBankStatus();
       getAnswers();
+      getLimitOfUsers();
     },
     shouldReconnect: (closeEvent) => true,
   });
@@ -73,7 +76,7 @@ function App() {
     });
 
     if (userData.data.error) {
-      setLimitOfUsers(true);
+      setIsLimitOfUsers(true);
       return;
     }
 
@@ -141,6 +144,12 @@ function App() {
     setAnswerBankStatus(response.data);
   };
 
+  const getLimitOfUsers = async () => {
+    const response = await axios.get("http://localhost:3000/api/users/limit");
+
+    setLimitOfUsers(response.data);
+  };
+
   // Seleccionar la opción A
   const setOptionA = () => {
     console.log("Option A");
@@ -191,7 +200,7 @@ function App() {
     }
   }, [timeLeft]);
 
-  if (limitOfUsers) {
+  if (isLimitOfUsers) {
     return (
       <main className="bg-neutral-100 min-h-screen flex flex-col justify-center items-center">
         <h2 className="text-2xl font-bold">
