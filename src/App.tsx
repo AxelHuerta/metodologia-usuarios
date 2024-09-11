@@ -47,6 +47,7 @@ function App() {
         getAnswerBankStatus();
         getRoundStatus();
         getAnswers();
+        getLimitOfUsers();
       }
     },
     onMessage: (event) => {
@@ -64,7 +65,7 @@ function App() {
       getAnswers();
       getLimitOfUsers();
     },
-    shouldReconnect: (closeEvent) => true,
+    shouldReconnect: () => true,
   });
 
   // Enviar el formulario
@@ -220,7 +221,7 @@ function App() {
     );
   }
 
-  if (isLoaded && !isRoundInProgress && !checkUsersLimit()) {
+  if (isLoaded && !isRoundInProgress) {
     return <Loading />;
   }
 
