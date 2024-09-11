@@ -5,13 +5,11 @@ import { Button } from "@/components/ui/button";
 type Props = {
   setName: (name: string) => void;
   handleSubmit: () => void;
-  checkUsersLimit: () => boolean;
 };
 
 function FormName(props: Readonly<Props>) {
   const { setName, handleSubmit } = props;
 
-  // Enviar el formulario
   // Manejar el input
   const handleInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     setName(event.target.value);

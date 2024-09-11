@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FormName from "./components/sections/FormName";
 import { Button } from "./components/ui/button";
 import Loading from "./components/sections/Loading";
+import UsersLimit from "./components/sections/UsersLimit";
+import RoundInfo from "./components/sections/RoundInfo";
 
 // Definir el tipo de usuario
 type User = {
@@ -16,7 +18,9 @@ type User = {
 const WS_URL = "ws://localhost:3000/ws";
 const A = "Dulce";
 const B = "Picante";
+const roundTime = 60;
 
+// Estilos para los botones activos
 const btnActiveStyles = "text-black border-2 border-black";
 
 function App() {
@@ -29,8 +33,6 @@ function App() {
   const [isButtonB, setIsButtonB] = useState(false);
   const [answers, setAnswers] = useState<string[]>([]);
   const [answerBankStatus, setAnswerBankStatus] = useState(true);
-  // TODO: Is this necessary?
-  const [limitOfUsers, setLimitOfUsers] = useState<number>(8);
   const [isLimitOfUsers, setIsLimitOfUsers] = useState(false);
 
   const [timeLeft, setTimeLeft] = useState(0); // Tiempo inicial en segundos
@@ -42,7 +44,6 @@ function App() {
       console.log("Connection opened");
       if (isLoaded) {
         getUsers();
-        // TODO: Es necesario obtener la ronda actual?
         getRound();
         getLimitOfUsers();
         getAnswerBankStatus();
@@ -56,8 +57,7 @@ function App() {
       if (
         type !== "on-user-count-changed" &&
         type !== "on-round-count-changed" &&
-        type !== "on-answers-bank-count-changed" &&
-        type !== "on-limit-count-changed"
+        type !== "on-answers-bank-count-changed"
       )
         return;
       getUsers();
@@ -70,31 +70,53 @@ function App() {
     shouldReconnect: () => true,
   });
 
-  // Enviar el formulario
   // TODO: Comporbar que el nombre no este vacío
+  /**
+   * Maneja el envío del formulario.
+   * Envía el nombre al servidor y comprueba si se ha alcanzado el límite de usuarios.
+   *
+   * @async
+   * @function handleSubmit
+   * @returns {Promise<void>} No retorna ningún valor.
+   */
   const handleSubmit = async () => {
     // Enviar el nombre al servidor
     const userData = await axios.post("http://localhost:3000/api/users", {
       name,
     });
 
+    // Comprobar si el limite se ha alcanzado
     if (userData.data.error) {
       setIsLimitOfUsers(true);
       return;
     }
 
+    // Guardar el usuario en el estado
     setMyUser(userData.data);
     setIsLoaded(true);
   };
 
-  // Obtener usuarios
+  /**
+   * Obtiene la lista de usuarios desde el servidor y actualiza el estado de usuarios.
+   *
+   * @async
+   * @function getUsers
+   * @returns {Promise<void>} No retorna ningún valor.
+   */
   const getUsers = async () => {
     const response = await axios.get("http://localhost:3000/api/users");
 
+    // Actualizar el estado de los usuarios
     setUsers(response.data);
   };
 
-  // Obtener ronda actual
+  /**
+   * Obtiene la ronda actual desde el servidor y actualiza el estado de la ronda.
+   *
+   * @async
+   * @function getRound
+   * @returns {Promise<void>} No retorna ningún valor.
+   */
   async function getRound() {
     const response = await fetch("http://localhost:3000/api/round").then(
       (res) => {
@@ -102,20 +124,32 @@ function App() {
       }
     );
 
+    // Actualizar el estado de la ronda
     setRound(response);
   }
 
-  // Enviar la respuesta
+  /**
+   * Envía la respuesta del usuario al servidor.
+   *
+   * @async
+   * @function sendAnswer
+   * @param {string} answer - La respuesta del usuario.
+   * @returns {Promise<void>} No retorna ningún valor.
+   */
   const sendAnswer = async (answer: string) => {
     await axios.post(`http://localhost:3000/api/users/${myUser?.id}`, {
       round,
       answer: answer,
     });
-
-    console.log("Answer sent");
   };
 
-  // Obtener el estado de la ronda
+  /**
+   * Obtiene el estado de la ronda desde el servidor y actualiza el estado de la ronda.
+   *
+   * @async
+   * @function getRoundStatus
+   * @returns {Promise<void>} No retorna ningún valor.
+   */
   const getRoundStatus = async () => {
     const response = await fetch("http://localhost:3000/api/round/status").then(
       (res) => {
@@ -123,22 +157,36 @@ function App() {
       }
     );
 
+    // Actualizar el estado de la ronda
     if (response && !isRoundInProgress) {
       setIsRoundInProgress(true);
-      setTimeLeft(60);
+      setTimeLeft(roundTime);
     } else if (!response) {
       setIsRoundInProgress(false);
       setTimeLeft(0);
     }
   };
 
-  // Obtener las respuestas
+  /**
+   * Obtiene la lista de respuestas desde el servidor y actualiza el estado de respuestas.
+   *
+   * @async
+   * @function getAnswers
+   * @returns {Promise<void>} No retorna ningún valor.
+   */
   const getAnswers = async () => {
     const response = await axios.get("http://localhost:3000/api/answers");
     setAnswers(response.data);
   };
 
-  // Obtener el estado del banco de respuestas
+  /**
+   * Obtiene el estado del banco de respuestas desde el servidor y
+   * actualiza el estado del banco de respuestas.
+   *
+   * @async
+   * @function getAnswerBankStatus
+   * @returns {Promise<void>} No retorna ningún valor.
+   */
   const getAnswerBankStatus = async () => {
     const response = await axios.get(
       "http://localhost:3000/api/answers/status"
@@ -147,22 +195,36 @@ function App() {
     setAnswerBankStatus(response.data);
   };
 
+  /**
+   * Obtiene el límite de usuarios desde el servidor y actualiza el estado de límite de usuarios.
+   *
+   * @async
+   * @function getLimitOfUsers
+   * @returns {Promise<void>} No retorna ningún valor.
+   */
   const getLimitOfUsers = async () => {
     const response = await axios.get("http://localhost:3000/api/users/limit");
-
-    setLimitOfUsers(response.data);
     setIsLimitOfUsers(response.data <= users.length);
   };
 
-  // Seleccionar la opción A
+  /**
+   * Selecciona la opción A, actualiza el estado de los botones y envía la respuesta.
+   *
+   * @function setOptionA
+   * @returns {void} No retorna ningún valor.
+   */
   const setOptionA = () => {
-    console.log("Option A");
     setIsButtonB(false);
     setIsButtonA(true);
     sendAnswer(A);
   };
 
-  // Seleccionar la opción A
+  /**
+   * Selecciona la opción B, actualiza el estado de los botones y envía la respuesta.
+   *
+   * @function setOptionB
+   * @returns {void} No retorna ningún valor.
+   */
   const setOptionB = () => {
     console.log("Option B");
     setIsButtonA(false);
@@ -170,7 +232,14 @@ function App() {
     sendAnswer(B);
   };
 
-  // Manejar las respuestas de los usuarios
+  /**
+   * Maneja las respuestas de los usuarios y retorna la respuesta correspondiente.
+   *
+   * @function handleAnswers
+   * @param {User} u - El usuario cuyas respuestas se están manejando.
+   * @param {number} index - El índice de la respuesta en el array de respuestas.
+   * @returns {string} La respuesta del usuario o "..." si no hay respuesta.
+   */
   const handleAnswers = (u: User, index: number) => {
     if (u.answers[round] === undefined) {
       return "...";
@@ -181,12 +250,6 @@ function App() {
     if (u.answers.length > 0 && !answerBankStatus) {
       return u.answers[round];
     }
-  };
-
-  const checkUsersLimit = () => {
-    if (limitOfUsers) return true;
-
-    return false;
   };
 
   useEffect(() => {
@@ -204,30 +267,22 @@ function App() {
     }
   }, [timeLeft]);
 
+  // Si el límite de usuarios se ha alcanzado, mostrar un mensaje
   if (isLimitOfUsers && !users.some((u) => u.id === myUser?.id)) {
-    return (
-      <main className="bg-neutral-100 min-h-screen flex flex-col justify-center items-center">
-        <h2 className="text-2xl font-bold">
-          ¡Ya hay suficientes participantes!
-        </h2>
-      </main>
-    );
+    return <UsersLimit />;
   }
 
+  // Si el usuario no ha ingresado su nombre, mostrar el formulario
   if (!isLoaded) {
-    return (
-      <FormName
-        setName={setName}
-        handleSubmit={handleSubmit}
-        checkUsersLimit={checkUsersLimit}
-      />
-    );
+    return <FormName setName={setName} handleSubmit={handleSubmit} />;
   }
 
+  // Si el usuario se ha registrado y la ronda no ha comenzado, mostrar un mensaje de carga
   if (isLoaded && !isRoundInProgress) {
     return <Loading />;
   }
 
+  // Si el usuario se ha registrado y la ronda ha comenzado, mostrar la interfaz del quiz
   return (
     <main className="bg-neutral-100 min-h-screen flex flex-col justify-center items-center">
       <div className="grid grid-cols-1 gap-2 w-full px-2 max-w-[1400px] md:grid-cols-2">
@@ -276,13 +331,9 @@ function App() {
             </CardContent>
           </CardHeader>
         </Card>
-        <Card className="flex justify-center items-center pt-3 md:col-span-2">
-          <CardContent className="flex justify-between items-center w-full">
-            <span>Ronda: {round + 1}</span>
-            <span>{myUser?.name}</span>
-            <span>Tiempo: {timeLeft}</span>
-          </CardContent>
-        </Card>
+
+        {/* Información de la ronda */}
+        <RoundInfo round={round} time={timeLeft} user={myUser} />
       </div>
     </main>
   );
