@@ -29,6 +29,7 @@ function App() {
   const [isButtonB, setIsButtonB] = useState(false);
   const [answers, setAnswers] = useState<string[]>([]);
   const [answerBankStatus, setAnswerBankStatus] = useState(true);
+  // TODO: Is this necessary?
   const [limitOfUsers, setLimitOfUsers] = useState<number>(8);
   const [isLimitOfUsers, setIsLimitOfUsers] = useState(false);
 
@@ -55,7 +56,8 @@ function App() {
       if (
         type !== "on-user-count-changed" &&
         type !== "on-round-count-changed" &&
-        type !== "on-answers-bank-count-changed"
+        type !== "on-answers-bank-count-changed" &&
+        type !== "on-limit-count-changed"
       )
         return;
       getUsers();
@@ -149,6 +151,7 @@ function App() {
     const response = await axios.get("http://localhost:3000/api/users/limit");
 
     setLimitOfUsers(response.data);
+    setIsLimitOfUsers(response.data <= users.length);
   };
 
   // Seleccionar la opción A
@@ -201,7 +204,7 @@ function App() {
     }
   }, [timeLeft]);
 
-  if (isLimitOfUsers) {
+  if (isLimitOfUsers && !users.some((u) => u.id === myUser?.id)) {
     return (
       <main className="bg-neutral-100 min-h-screen flex flex-col justify-center items-center">
         <h2 className="text-2xl font-bold">
@@ -276,8 +279,7 @@ function App() {
         <Card className="flex justify-center items-center pt-3 md:col-span-2">
           <CardContent className="flex justify-between items-center w-full">
             <span>Ronda: {round + 1}</span>
-            {/* <span>{myUser?.name}</span> */}
-            <span>John Doe</span>
+            <span>{myUser?.name}</span>
             <span>Tiempo: {timeLeft}</span>
           </CardContent>
         </Card>
